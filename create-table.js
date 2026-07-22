@@ -13,12 +13,9 @@ async function updateTable() {
 
     console.log('🔄 Terhubung ke database Aiven...');
 
-    // 1. Hapus tabel lama
-    await connection.query(`DROP TABLE IF EXISTS reminders;`);
-
-    // 2. Buat tabel baru dengan id bertipe VARCHAR (Teks)
-    const sql = `
-      CREATE TABLE reminders (
+    // 1. Buat Tabel "reminders" (Aman, tidak menghapus data lama jika sudah ada)
+    const sqlReminders = `
+      CREATE TABLE IF NOT EXISTS reminders (
         id VARCHAR(255) PRIMARY KEY,
         judul VARCHAR(255) NOT NULL,
         deskripsi TEXT,
@@ -51,11 +48,24 @@ async function updateTable() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `;
+    await connection.query(sqlReminders);
+    console.log('✅ Tabel "reminders" SIAP!');
 
-    await connection.query(sql);
-    console.log('✅ SELAMAT! Tabel "reminders" BERHASIL diperbarui dengan ID tipe Teks/VARCHAR!');
-    
+    // 2. Buat Tabel "catatan" (SOLUSI UNTUK ERROR VERCEL LOG GET /api/catatan)
+    const sqlCatatan = `
+      CREATE TABLE IF NOT EXISTS catatan (
+        id VARCHAR(255) PRIMARY KEY,
+        judul VARCHAR(255) NOT NULL,
+        isi TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `;
+    await connection.query(sqlCatatan);
+    console.log('✅ Tabel "catatan" BERHASIL dibuat!');
+
     await connection.end();
+    console.log('🎉 SELAMAT! Semua tabel database Aiven sudah lengkap & siap digunakan.');
   } catch (err) {
     console.error('❌ Gagal memperbarui tabel:', err.message);
   }

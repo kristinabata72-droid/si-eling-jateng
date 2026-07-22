@@ -1,42 +1,52 @@
 import { NextResponse } from "next/server";
-// Ubah path dan nama fungsi di bawah sesuai dengan yang ada di file notification.ts Mas
 import { kirimPengingat } from "@/lib/notification"; 
 
 export async function POST(request: Request) {
   try {
-    // 1. Menangkap data yang dikirim dari page.tsx saat alarm bunyi
+    // 1. Menangkap data yang dikirim dari frontend saat alarm/pemicu aktif
     const body = await request.json();
     
-    // 🌟 UBAH 1: Tangkap emailTujuan dan waTujuan dari frontend
-    const { judul, waktu, disposisi, emailTujuan, waTujuan } = body;
+    // 🌟 PERBAIKAN 1: Ekstraksi variabel dengan fallback (mendukung camelCase & snake_case)
+    const judul = body.judul || "Agenda Tanpa Judul";
+    const waktu = body.waktu || body.waktu_target || body.waktuTarget || "-";
+    const disposisi = body.disposisi || "-";
+    const emailTarget = body.emailTujuan || body.email_tujuan || body.email || null;
+    const waTarget = body.waTujuan || body.wa_tujuan || body.wa || null;
 
-    console.log("📥 Menerima request notifikasi untuk:", judul);
-    console.log("📧 Target Email:", emailTujuan || "Tidak ada");
-    console.log("📱 Target WA:", waTujuan || "Tidak ada");
+    console.log("📥 [API Notifikasi] Menerima request untuk:", judul);
+    console.log("📧 Target Email:", emailTarget || "(Kosong / Tidak diisi)");
+    console.log("📱 Target WA:", waTarget || "(Kosong / Tidak diisi)");
 
-    // 2. Memanggil fungsi pengirim Email/WA dari file notification.ts Mas
+    // 🌟 PERBAIKAN 2: Validasi agar server tidak memproses jika tidak ada tujuan
+    if (!emailTarget && !waTarget) {
+      console.warn("⚠️ API Notifikasi dilewati: Alamat Email atau WA tujuan tidak ditemukan.");
+      return NextResponse.json({ 
+        success: false, 
+        message: "Request ditolak: Tidak ada alamat email atau nomor WhatsApp tujuan yang valid." 
+      }, { status: 400 });
+    }
+
+    // 2. Memanggil fungsi pengirim Email/WA dari lib/notification.ts
     const hasil = await kirimPengingat({
       judul: judul,
       waktu: waktu,
       disposisi: disposisi,
-      // 🌟 UBAH 2: Sambungkan ke parameter email dan wa milik kirimPengingat
-      email: emailTujuan, 
-      wa: waTujuan        
+      email: emailTarget, 
+      wa: waTarget        
     });
 
-    // 3. Mengirim jawaban balik ke frontend bahwa sukses
+    // 3. Response sukses ke frontend
     return NextResponse.json({ 
       success: true, 
-      message: "Notifikasi berhasil diproses server!",
+      message: "Notifikasi berhasil diproses dan dikirim server!",
       detail: hasil 
     }, { status: 200 });
 
   } catch (error: any) {
-    console.error("❌ Error di API Notifikasi:", error.message);
+    console.error("❌ Error di API Notifikasi:", error?.message || error);
     return NextResponse.json({ 
       success: false, 
-      message: "Gagal memproses notifikasi",
-      error: error.message 
+      message: "Gagal memproses notifikasi: " + (error?.message || "Internal Server Error"),
     }, { status: 500 });
   }
 }
