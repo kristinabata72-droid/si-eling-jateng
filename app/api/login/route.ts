@@ -1,38 +1,37 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db'; // 1. Kembali menggunakan 'query' bawaan Anda
 
 export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
 
-    // 2. Menggunakan fungsi query bawaan Anda yang sudah aman
-    const rows = (await query(
-      'SELECT * FROM users WHERE username = ? AND password = ?',
-      [username, password]
-    )) as any[];
+    // Akun default untuk login (Bisa disesuaikan dengan data admin Anda)
+    const USER_ADMIN = 'admin';
+    const PASS_ADMIN = 'admin123';
 
-    // 3. Jika data ditemukan di database
-    if (rows.length > 0) {
-      return NextResponse.json({
-        success: true,
-        message: 'Login berhasil!',
-        user: { 
-          id: rows[0].id, 
-          username: rows[0].username 
-        }
-      }, { status: 200 });
+    if (username === USER_ADMIN && password === PASS_ADMIN) {
+      const response = NextResponse.json(
+        { message: 'Login berhasil' },
+        { status: 200 }
+      );
+
+      // Set cookie penanda login otomatis dari server Next.js
+      response.cookies.set('isLoggedIn', 'true', {
+        httpOnly: false,
+        path: '/',
+        maxAge: 60 * 60 * 24, // 1 hari
+      });
+
+      return response;
     } else {
-      // 4. Jika data tidak cocok
-      return NextResponse.json({
-        success: false,
-        message: 'Username atau password salah.'
-      }, { status: 401 });
+      return NextResponse.json(
+        { message: 'Username atau password salah!' },
+        { status: 401 }
+      );
     }
   } catch (error) {
-    console.error('Login Error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Terjadi kesalahan pada server.' 
-    }, { status: 500 });
+    return NextResponse.json(
+      { message: 'Terjadi kesalahan pada server' },
+      { status: 500 }
+    );
   }
 }

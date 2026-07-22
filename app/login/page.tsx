@@ -2,17 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Lock } from 'lucide-react';
+import { User, Lock, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
       const res = await fetch('/api/login', {
@@ -24,12 +26,20 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
+        // Simpan penanda login ke Cookie & LocalStorage
+        document.cookie = "isLoggedIn=true; path=/; max-age=86400"; // Berlaku 1 hari
+        localStorage.setItem('isLoggedIn', 'true');
+
+        // Pindah ke dashboard & refresh halaman
         router.push('/');
+        router.refresh();
       } else {
         setError(data.message || 'Username atau password salah');
       }
     } catch (err) {
-      setError('Terjadi kesalahan, silakan coba lagi');
+      setError('Terjadi kesalahan koneksi, silakan coba lagi');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,7 +54,7 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 text-sm rounded-lg text-center">
+          <div className="mb-4 p-3 bg-red-100 text-red-700 text-sm rounded-lg text-center font-medium">
             {error}
           </div>
         )}
@@ -84,9 +94,17 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 px-4 rounded-lg text-sm transition shadow-sm mt-2"
+            disabled={loading}
+            className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg text-sm transition shadow-sm mt-2 flex items-center justify-center gap-2"
           >
-            Masuk ke Sistem
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={18} />
+                <span>Memproses...</span>
+              </>
+            ) : (
+              'Masuk ke Sistem'
+            )}
           </button>
         </form>
       </div>
