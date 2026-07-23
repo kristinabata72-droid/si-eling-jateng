@@ -3,7 +3,7 @@ import { query } from '@/lib/db';
 
 export async function GET() {
   try {
-    // Daftar semua kolom yang dibutuhkan oleh tabel catatan
+    // Kelompokkan seluruh kolom yang dibutuhkan aplikasi
     const columns = [
       { name: 'judul_catatan', type: 'VARCHAR(255)' },
       { name: 'isi_catatan', type: 'TEXT' },
@@ -16,7 +16,7 @@ export async function GET() {
 
     const results = [];
 
-    // Tambahkan tiap kolom satu per satu secara aman
+    // Tambahkan setiap kolom jika belum ada
     for (const col of columns) {
       try {
         await query(`ALTER TABLE catatan ADD COLUMN ${col.name} ${col.type};`);
@@ -32,7 +32,7 @@ export async function GET() {
 
     return NextResponse.json({ 
       success: true, 
-      message: '🎉 BERHASIL! Seluruh kolom tabel catatan sudah lengkap dan siap digunakan!',
+      message: '🎉 BERHASIL! Seluruh kolom tabel catatan sudah lengkap!',
       details: results
     });
   } catch (error: any) {
