@@ -62,19 +62,21 @@ export async function POST(request: Request) {
       [id || null, judul, waktuBersih, kategori, dokumentasi, disposisi, email_tujuan, wa_tujuan, filesString]
     );
 
-    // B. KIRIM EMAIL OTOMATIS (Jika 'email_tujuan' diisi)
+    // B. KIRIM EMAIL OTOMATIS (Menggunakan variabel SMTP_USER & SMTP_PASS)
     if (email_tujuan) {
       try {
         const transporter = nodemailer.createTransport({
-          service: 'gmail',
+          host: process.env.SMTP_HOST || 'smtp.gmail.com',
+          port: Number(process.env.SMTP_PORT) || 587,
+          secure: false,
           auth: {
-            user: process.env.EMAIL_USER, // Email pengirim
-            pass: process.env.EMAIL_PASS, // App Password dari Google
+            user: process.env.SMTP_USER, // Sesuai Vercel & .env
+            pass: process.env.SMTP_PASS, // Sesuai Vercel & .env
           },
         });
 
         const mailOptions = {
-          from: `"SI-ELING JATENG" <${process.env.EMAIL_USER}>`,
+          from: `"SI-ELING JATENG" <${process.env.SMTP_USER}>`,
           to: email_tujuan,
           subject: `📌 [Pengingat Agenda] ${judul}`,
           html: `
@@ -112,6 +114,48 @@ export async function POST(request: Request) {
     console.error('POST Reminders Error:', error);
     return NextResponse.json(
       { success: false, message: 'Gagal menyimpan data ke database: ' + error.message }, 
+      { status: 500 }
+    );
+  }
+}
+
+// 3. [DELETE] : Menghapus data agenda berdasarkan ID
+export async function DELETE(request: Request) {
+  try {
+    let id: string | null = null;
+    
+    // Cek ID dari URL query (?id=xxx)
+    const { searchParams } = new URL(request.url);
+    id = searchParams.get('id');
+
+    // Jika tidak ada di URL, cek dari Body Request JSON
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body.id || null;
+      } catch (e) {
+        // Abaikan jika tidak ada body JSON
+      }
+    }
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: 'ID agenda wajib disertakan!' }, 
+        { status: 400 }
+      );
+    }
+
+    // Eksekusi Hapus dari tabel reminders
+    await query('DELETE FROM reminders WHERE id = ?', [id]);
+
+    return NextResponse.json(
+      { success: true, message: 'Agenda berhasil dihapus!' }, 
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error('DELETE Reminders Error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Gagal menghapus agenda: ' + error.message }, 
       { status: 500 }
     );
   }
