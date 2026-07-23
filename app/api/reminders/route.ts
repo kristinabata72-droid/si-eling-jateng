@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import nodemailer from 'nodemailer';
 
-// 1. [GET] : Mengambil semua data agenda untuk ditampilkan di layar dashboard
+// 1. [GET] : Mengambil semua data agenda
 export async function GET() {
   try {
     const reminders = await query(
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const d = new Date(waktu_target);
     if (isNaN(d.getTime())) {
       return NextResponse.json(
-        { success: false, message: 'Format tanggal/waktu yang dikirim dari form tidak valid!' }, 
+        { success: false, message: 'Format tanggal/waktu tidak valid!' }, 
         { status: 400 }
       );
     }
@@ -62,21 +62,19 @@ export async function POST(request: Request) {
       [id || null, judul, waktuBersih, kategori, dokumentasi, disposisi, email_tujuan, wa_tujuan, filesString]
     );
 
-    // B. KIRIM EMAIL OTOMATIS (Membaca variabel SMTP dari .env / Vercel)
+    // B. KIRIM EMAIL OTOMATIS (Jika 'email_tujuan' diisi)
     if (email_tujuan) {
       try {
         const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST || 'smtp.gmail.com',
-          port: Number(process.env.SMTP_PORT) || 587,
-          secure: false, // port 587 menggunakan STARTTLS
+          service: 'gmail',
           auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
+            user: process.env.EMAIL_USER, // Email pengirim
+            pass: process.env.EMAIL_PASS, // App Password dari Google
           },
         });
 
         const mailOptions = {
-          from: `"SI-ELING JATENG" <${process.env.SMTP_USER}>`,
+          from: `"SI-ELING JATENG" <${process.env.EMAIL_USER}>`,
           to: email_tujuan,
           subject: `📌 [Pengingat Agenda] ${judul}`,
           html: `
