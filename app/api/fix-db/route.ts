@@ -3,29 +3,37 @@ import { query } from '@/lib/db';
 
 export async function GET() {
   try {
-    // 1. Tambah kolom tanggal_input jika belum ada
-    try {
-      await query(`
-        ALTER TABLE catatan 
-        ADD COLUMN tanggal_input DATETIME DEFAULT CURRENT_TIMESTAMP;
-      `);
-    } catch (e) {
-      // Abaikan jika kolom sudah ada
-    }
+    // Daftar semua kolom yang dibutuhkan oleh tabel catatan
+    const columns = [
+      { name: 'judul_catatan', type: 'VARCHAR(255)' },
+      { name: 'isi_catatan', type: 'TEXT' },
+      { name: 'tanggal_input', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
+      { name: 'tanggal', type: 'DATE' },
+      { name: 'status', type: 'VARCHAR(50) DEFAULT "AKTIF"' },
+      { name: 'kategori', type: 'VARCHAR(100)' },
+      { name: 'file_path', type: 'VARCHAR(255)' }
+    ];
 
-    // 2. Jaga-jaga untuk kolom judul_catatan
-    try {
-      await query(`
-        ALTER TABLE catatan 
-        ADD COLUMN judul_catatan VARCHAR(255);
-      `);
-    } catch (e) {
-      // Abaikan jika kolom sudah ada
+    const results = [];
+
+    // Tambahkan tiap kolom satu per satu secara aman
+    for (const col of columns) {
+      try {
+        await query(`ALTER TABLE catatan ADD COLUMN ${col.name} ${col.type};`);
+        results.push(`✅ Kolom ${col.name} berhasil ditambahkan`);
+      } catch (e: any) {
+        if (e.code === 'ER_DUP_FIELDNAME' || e.message?.includes('Duplicate column')) {
+          results.push(`ℹ️ Kolom ${col.name} sudah ada`);
+        } else {
+          results.push(`⚠️ Kolom ${col.name}: ${e.message}`);
+        }
+      }
     }
 
     return NextResponse.json({ 
       success: true, 
-      message: '🎉 BERHASIL! Kolom tanggal_input dan judul_catatan sudah siap di database.' 
+      message: '🎉 BERHASIL! Seluruh kolom tabel catatan sudah lengkap dan siap digunakan!',
+      details: results
     });
   } catch (error: any) {
     return NextResponse.json({ 
