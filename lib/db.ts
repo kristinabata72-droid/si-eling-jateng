@@ -1,12 +1,12 @@
 import mysql from 'mysql2/promise';
 
 export async function query(queryText: string, values: any[] = []) {
-  // Langsung diarahkan ke host dan port Aiven Cloud
-  const host = (process.env.DB_HOST || 'mysql-33b8aaa8-si-eling-jateng.f.aivencloud.com').trim();
-  const user = (process.env.DB_USER || 'avnadmin').trim();
-  const password = (process.env.DB_PASSWORD || 'AVNS_Jg_rRoGmWb4MMI-yPHJ').trim();
-  const database = (process.env.DB_DATABASE || 'defaultdb').trim();
-  const port = Number(process.env.DB_PORT) || 26188;
+  // Hardcode port Aiven 26188 dan host agar tidak terkecoh port 3306 dari Vercel
+  const host = 'mysql-33b8aaa8-si-eling-jateng.f.aivencloud.com';
+  const user = 'avnadmin';
+  const password = 'AVNS_Jg_rRoGmWb4MMI-yPHJ';
+  const database = (process.env.DB_DATABASE || 'db_reminder_sekda').trim();
+  const port = 26188; // Wajib 26188 untuk Aiven Cloud
 
   try {
     const connection = await mysql.createConnection({
