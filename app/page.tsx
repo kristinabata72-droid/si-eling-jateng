@@ -63,7 +63,7 @@ export default function Home() {
   const [modalAgenda, setModalAgenda] = useState<Reminder | null>(null);
   const [modalCatatan, setModalCatatan] = useState<CatatanMandiri | null>(null);
 
-  const [waktuSekarang, setWaktuSekarang] = useState(new Date().getTime() + (5 * 60 * 1000));
+  const [waktuSekarang, setWaktuSekarang] = useState(new Date().getTime());
   const [isMounted, setIsMounted] = useState(false);
 
 // Load Data dari MySQL Database 
@@ -130,10 +130,10 @@ export default function Home() {
 
   // Engine Waktu Nyata & Alarm
   useEffect(() => {
-    const interval = setInterval(() => {
-      const waktuKoreksi = new Date().getTime() + (5 * 60 * 1000);
-      setWaktuSekarang(waktuKoreksi);
-
+  const interval = setInterval(() => {
+    const waktuKoreksi = new Date().getTime();
+    setWaktuSekarang(waktuKoreksi);
+    
       setReminders((prevReminders) => {
         let adaPerubahan = false;
         const dataBaru = prevReminders.map((reminder) => {
@@ -495,8 +495,15 @@ export default function Home() {
             <div>
               <p className="text-[9px] text-slate-400 uppercase tracking-wider font-bold">Waktu Aktual Sistem</p>
               <p className="text-xs font-mono text-[#0A2540] font-bold">
-                {isMounted ? new Date(waktuSekarang).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) + " WIB" : "--:-- WIB"}
-              </p>
+                {isMounted 
+  ? new Date(waktuSekarang).toLocaleTimeString("id-ID", { 
+      timeZone: "Asia/Jakarta", 
+      hour: "2-digit", 
+      minute: "2-digit", 
+      second: "2-digit" 
+    }).replace(/\./g, ":") + " WIB" 
+  : "--:-- WIB"}
+</p>
             </div>
           </div>
         </header>
